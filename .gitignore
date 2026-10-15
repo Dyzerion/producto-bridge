@@ -1,0 +1,4 @@
+# Caché local de whitelist (se regenera en runtime)
+cache/
+
+*.log

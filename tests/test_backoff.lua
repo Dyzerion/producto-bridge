@@ -1,0 +1,46 @@
+-- Backoff exponencial y estado de error (un solo aviso por transición).
+
+test("backoff: 5 → 10 → 20 → 40 → 60 con tope", function()
+  assertEq(BridgeApi.backoffDelay(1), 5, "primer fallo")
+  assertEq(BridgeApi.backoffDelay(2), 10, "segundo fallo")
+  assertEq(BridgeApi.backoffDelay(3), 20, "tercer fallo")
+  assertEq(BridgeApi.backoffDelay(4), 40, "cuarto fallo")
+  assertEq(BridgeApi.backoffDelay(5), 60, "quinto fallo")
+  assertEq(BridgeApi.backoffDelay(12), 60, "tope en 60")
+  assertEq(BridgeApi.backoffDelay(0), 5, "intentos < 1 se tratan como 1")
+end)
+
+test("backoff: un solo aviso de error y otro de recuperación", function()
+  BridgeApi.resetErrors()
+  local logs = capturePrints(function()
+    assertEq(BridgeApi.reportFailure("a"), 5, "delay del primer fallo")
+    assertEq(BridgeApi.reportFailure("a"), 10, "delay del segundo fallo")
+    BridgeApi.reportFailure("b")           -- otro bucle: sin aviso nuevo
+    BridgeApi.reportSuccess("b")           -- 'b' sano pero 'a' fallando: sin aviso
+    BridgeApi.reportSuccess("a")           -- todos sanos → recuperación
+  end)
+  assertEq(#logs, 2, "un aviso de error y uno de recuperación")
+  assertContains(logs[1], "sin conexión", "primer aviso")
+  assertContains(logs[2], "restablecida", "segundo aviso")
+end)
+
+test("backoff: recuperación sin error previo no imprime nada", function()
+  BridgeApi.resetErrors()
+  local logs = capturePrints(function()
+    BridgeApi.reportSuccess("a")
+  end)
+  assertEq(#logs, 0, "sin errores no hay aviso de recuperación")
+end)
+
+test("backoff: el fallo posterior al recuperar vuelve a avisar una vez", function()
+  BridgeApi.resetErrors()
+  local logs = capturePrints(function()
+    BridgeApi.reportFailure("a")
+    BridgeApi.reportSuccess("a")
+    BridgeApi.reportFailure("a")
+    BridgeApi.reportSuccess("a")
+  end)
+  assertEq(#logs, 4, "dos errores y dos recuperaciones")
+  assertContains(logs[3], "sin conexión", "segundo ciclo de error")
+  assertContains(logs[4], "restablecida", "segundo ciclo de recuperación")
+end)
