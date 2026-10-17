@@ -31,7 +31,7 @@ vuelo. **Solo servidor** (no hay scripts de cliente).
 5. Reinicia el servidor y mira la consola:
 
    ```text
-   [lobbynest] conectado · v0.1.0 · whitelist activa
+   [lobbynest] conectado · v0.2.0 · whitelist activa
    ```
 
 Opcional (solo para pruebas): apuntar a otro entorno con
@@ -46,10 +46,21 @@ Opcional (solo para pruebas): apuntar a otro entorno con
 | Cada 5 s | Aplica los comandos `whitelist.add` / `whitelist.remove` del panel |
 | Cada 600 s | Refresca la whitelist completa (con ETag) |
 | Un jugador entra | Verifica su Discord contra la caché; si no está, consulta en vivo (4 s) |
+| Plan sin conexión in-game (402) | Un aviso en consola, se detienen los bucles y la whitelist guardada sigue decidiendo quién entra; reintenta solo cada 15 min |
 
 Los intervalos 30 / 5 / 600 son los valores por defecto: la API puede
 ajustarlos durante el saludo inicial. Si la API falla, cada bucle reintenta
 con backoff 5 → 10 → 20 → 40 → 60 s y la consola avisa una sola vez.
+
+## Planes y la whitelist
+
+Si tu plan de Lobbynest deja de incluir la conexión in-game, el recurso
+imprime **una sola vez** `[lobbynest] tu plan no incluye la conexión
+in-game; la whitelist guardada sigue funcionando` y deja de hablar con la
+API. Nada se borra: los jugadores aprobados siguen entrando con la caché
+local (`cache/whitelist.json`) y tu `lobbynest_fail_mode` decide qué pasa
+con quien no está en ella. Si el plan vuelve a incluir la conexión, el
+recurso reconecta solo en ≤ 15 minutos, sin reiniciar el servidor.
 
 ## Pruebas
 

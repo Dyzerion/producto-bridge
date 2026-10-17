@@ -5,7 +5,7 @@ lua54 'yes'
 name 'lobbynest-bridge'
 description 'Bridge entre Lobbynest y tu servidor FiveM'
 author 'Lobbynest'
-version '0.1.0'
+version '0.2.0'
 license 'MIT'
 
 -- Solo servidor: esta versión no tiene scripts de cliente.

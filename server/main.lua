@@ -1,9 +1,11 @@
--- Arranque, hello, bucles y conexión de jugadores (F1-13).
+-- Arranque, hello, bucles y conexión de jugadores (F1-13, F2-02).
 Bridge = {}
 
 local connected = false  -- hello respondió 200 y los bucles corren
 local stopped = false    -- 401/426: ya no se reintenta nada
 local updateNotified = false
+local planNotified = false
+local loopsActive = false
 
 local function failOpen()
   return Config.failMode ~= "closed"
@@ -28,37 +30,46 @@ local function fxserverVersion()
 end
 
 -- Bucles de heartbeat / whitelist / comandos. Cada uno espera su
--- intervalo normal o el backoff si la última ronda falló.
+-- intervalo normal o el backoff si la última ronda falló. El flag
+-- loopsActive permite detenerlos sin reiniciar el recurso (modo 402).
 local function startLoops()
+  if loopsActive then return end
+  loopsActive = true
   CreateThread(function()
-    while true do
+    while loopsActive do
       local backoff = BridgeStatus.heartbeat()
       Wait((backoff or Config.intervals.heartbeatSec) * 1000)
     end
   end)
   CreateThread(function()
-    while true do
+    while loopsActive do
       local backoff = BridgeWhitelist.fetch()
       Wait((backoff or Config.intervals.whitelistSec) * 1000)
     end
   end)
   CreateThread(function()
-    while true do
+    while loopsActive do
       local backoff = BridgeCommands.poll()
       Wait((backoff or Config.intervals.commandsSec) * 1000)
     end
   end)
 end
 
+local function stopLoops()
+  loopsActive = false
+end
+
 -- Respuesta del hello. Devuelve:
---   'connected' → todo bien, arrancan los bucles
+--   'connected' → todo bien, arrancan (o reanudan) los bucles
 --   'stopped'   → 401 o 426: se detiene
+--   'plan'      → 402: sin bucles; reintento en planRetrySec (F2-06)
 --   'retry'     → error de red o cuerpo ilegible (+ delay de backoff)
 local function onHello(status, body)
   if status == 200 and body ~= nil then
     local hello = BridgeApi.parseHello(body)
     if hello ~= nil then
       connected = true
+      planNotified = false
       BridgeApi.reportSuccess("hello")
       Config.intervals = hello.intervals
       BridgeWhitelist.setEnabled(hello.whitelistEnabled)
@@ -88,6 +99,20 @@ local function onHello(status, body)
     print(string.format(Config.messages.updateRequired, target))
     return "stopped"
   end
+  if status == 402 then
+    -- Plan sin el entitlement `bridge` (F2-06): se detienen los bucles de
+    -- red pero el handler de playerConnecting sigue con la caché
+    -- persistida y el fail_mode (regla 5 de fase-2 §1: nada apaga la
+    -- whitelist). UN solo aviso; reintento cada 15 min por si el plan
+    -- cambió: al volver 200 se reanudan los bucles sin reiniciar.
+    stopLoops()
+    connected = false
+    if not planNotified then
+      planNotified = true
+      print(Config.messages.planUnavailable)
+    end
+    return "plan"
+  end
   return "retry", BridgeApi.reportFailure("hello")
 end
 
@@ -103,14 +128,21 @@ local function helloLoop()
         },
       }, 10000)
       local action, delay = onHello(status, body)
-      if action ~= "retry" then return end
-      Wait((delay or 5) * 1000)
+      if action == "retry" then
+        Wait((delay or 5) * 1000)
+      elseif action == "plan" then
+        Wait((Config.planRetrySec or 900) * 1000)
+      else
+        return
+      end
     end
   end)
 end
 
 -- playerConnecting con deferrals, en el orden del documento (F1-13):
--- siempre defer() + Wait(0) antes de cualquier HTTP.
+-- siempre defer() + Wait(0) antes de cualquier HTTP. Sigue registrado
+-- aunque los bucles estén detenidos (401/426/402): con la caché cargada
+-- el acceso decide con datos locales.
 local function registerConnecting()
   AddEventHandler("playerConnecting", function(_playerName, _setKickReason, deferrals)
     local sourceId = source
@@ -163,6 +195,13 @@ local function start()
   BridgeWhitelist.load()
   registerConnecting()
   helloLoop()
+end
+
+-- Superficie de pruebas: las unitarias (tests/test_plan.lua) llaman al
+-- hello y observan el estado de los bucles sin red ni FXServer.
+Bridge.onHello = onHello
+function Bridge.loopsRunning()
+  return loopsActive
 end
 
 start()
