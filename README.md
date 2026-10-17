@@ -1,4 +1,4 @@
-# producto-bridge
+# lobbynest-bridge
 
 Bridge entre **Lobbynest** y tu servidor FiveM: mantiene la whitelist del
 panel sincronizada con el servidor, reporta estado y aplica cambios al
@@ -6,12 +6,12 @@ vuelo. **Solo servidor** (no hay scripts de cliente).
 
 ## Instalación en 5 pasos
 
-1. Descarga la [última release](https://github.com/dyzerion/producto-bridge/releases/latest)
-   y descomprime la carpeta `producto-bridge` dentro de tu `resources/`.
+1. Descarga la [última release](https://github.com/dyzerion/lobbynest-bridge/releases/latest)
+   y descomprime la carpeta `lobbynest-bridge` dentro de tu `resources/`.
 2. Agrega esta línea en tu `server.cfg`:
 
    ```cfg
-   ensure producto-bridge
+   ensure lobbynest-bridge
    ```
 
 3. Copia la llave desde el panel de Lobbynest (menú **Servidor** →
@@ -19,23 +19,23 @@ vuelo. **Solo servidor** (no hay scripts de cliente).
    (`set`, **NO** `setr` — con `setr` cualquier jugador podría leerla):
 
    ```cfg
-   set producto_key "pk_live_…"
+   set lobbynest_key "pk_live_…"
    ```
 
 4. Elige cómo fallar cuando la API no responda:
 
    ```cfg
-   set producto_fail_mode "open"    # open: deja pasar · closed: no deja pasar
+   set lobbynest_fail_mode "open"    # open: deja pasar · closed: no deja pasar
    ```
 
 5. Reinicia el servidor y mira la consola:
 
    ```text
-   [producto] conectado · v0.1.0 · whitelist activa
+   [lobbynest] conectado · v0.1.0 · whitelist activa
    ```
 
 Opcional (solo para pruebas): apuntar a otro entorno con
-`set producto_api_url "https://api.lobbynest.xyz"`.
+`set lobbynest_api_url "https://api.lobbynest.xyz"`.
 
 ## Qué hace
 

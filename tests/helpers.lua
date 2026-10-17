@@ -256,16 +256,34 @@ end
 -- ------------------------------------------------------- natives simuladas
 
 SimulatedNatives = {
-  resource = "producto-bridge",
+  resource = "lobbynest-bridge",
   files = {},        -- path → contenido (para Load/SaveResourceFile)
   lastSave = nil,    -- últimos argumentos de SaveResourceFile
   players = {},      -- GetPlayers
-  convars = {},      -- GetConvarInt
+  convars = {},      -- GetConvar / GetConvarInt
   gameTimer = 0,     -- GetGameTimer (ms)
+  threads = {},      -- funciones pasadas a CreateThread (no se ejecutan)
+  handlers = {},     -- eventos registrados con AddEventHandler
 }
 
 function GetCurrentResourceName()
   return SimulatedNatives.resource
+end
+
+function CreateThread(fn)
+  SimulatedNatives.threads[#SimulatedNatives.threads + 1] = fn
+end
+
+function Wait(_ms) end
+
+function AddEventHandler(name, fn)
+  SimulatedNatives.handlers[name] = fn
+end
+
+function GetConvar(name, default)
+  local value = SimulatedNatives.convars[name]
+  if value == nil then return default end
+  return value
 end
 
 function SaveResourceFile(resourceName, fileName, data, dataLength)

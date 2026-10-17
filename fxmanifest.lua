@@ -2,7 +2,7 @@ fx_version 'cerulean'
 game 'gta5'
 lua54 'yes'
 
-name 'producto-bridge'
+name 'lobbynest-bridge'
 description 'Bridge entre Lobbynest y tu servidor FiveM'
 author 'Lobbynest'
 version '0.1.0'

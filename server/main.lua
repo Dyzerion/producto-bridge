@@ -10,10 +10,10 @@ local function failOpen()
 end
 
 local function readConvars()
-  BridgeApi.key = GetConvar("producto_key", "")
-  local apiUrl = GetConvar("producto_api_url", "")
+  BridgeApi.key = GetConvar("lobbynest_key", "")
+  local apiUrl = GetConvar("lobbynest_api_url", "")
   if apiUrl ~= "" then Config.apiUrl = apiUrl end
-  local failMode = GetConvar("producto_fail_mode", "")
+  local failMode = GetConvar("lobbynest_fail_mode", "")
   if failMode == "open" or failMode == "closed" then
     Config.failMode = failMode
   end

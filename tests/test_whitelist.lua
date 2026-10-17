@@ -76,7 +76,7 @@ test("whitelist: save/load con natives simuladas", function()
   BridgeWhitelist.replace(9, true, { "570885174588854282" })
   BridgeWhitelist.save()
   assertEq(SimulatedNatives.lastSave.fileName, "cache/whitelist.json", "ruta")
-  assertEq(SimulatedNatives.lastSave.resourceName, "producto-bridge", "recurso")
+  assertEq(SimulatedNatives.lastSave.resourceName, "lobbynest-bridge", "recurso")
   assertEq(SimulatedNatives.lastSave.dataLength, -1, "longitud automática")
 
   BridgeWhitelist.reset()
